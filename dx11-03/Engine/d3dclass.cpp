@@ -21,15 +21,12 @@ D3DClass::D3DClass()
 {
 }
 
-/*D3DClass::D3DClass(const D3DClass& other)
-{
-}*/
-
 D3DClass::~D3DClass()
 {
 }
 
-void D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hwnd, bool fullscreen, float screenDepth, float screenNear)
+void D3DClass::Initialize(const int screenWidth, const int screenHeight, const bool vsync, const HWND hwnd,
+                          const bool fullscreen, const float screenDepth, const float screenNear)
 {    
     // Store the vsync setting.
     m_vsync_enabled = vsync;
@@ -193,39 +190,36 @@ void D3DClass::GetVideoCardInfo(char* cardName, int& memory)
 
 IDXGI_FACTORY_COM_PTR D3DClass::GetIDXGIFactory()
 {
-    IDXGIFactory* factory_unsafe;
-    HRESULT result = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory_unsafe);
+    IDXGI_FACTORY_COM_PTR factory;
+    HRESULT result = CreateDXGIFactory(__uuidof(IDXGIFactory), &factory);
     if (FAILED(result))
     {
         throw engine_exception("Creation of DXGI Factory failed with result code = ") << result;
     }
-    IDXGI_FACTORY_COM_PTR factory(factory_unsafe);
 
     return factory;
 }
 
 IDXGI_ADAPTER_COM_PTR D3DClass::GetPrimaryDisplayAdapter(const IDXGI_FACTORY_COM_PTR& factory)
 {
-    IDXGIAdapter* adapter_unsafe;
-    HRESULT result = factory->EnumAdapters(0, &adapter_unsafe);
+    IDXGI_ADAPTER_COM_PTR adapter;
+    HRESULT result = factory->EnumAdapters(0, &adapter);
     if (FAILED(result))
     {
         throw engine_exception("Creation of DXGI adapter failed with result code = ") << result;
     }
-    IDXGI_ADAPTER_COM_PTR adapter(adapter_unsafe);
 
     return adapter;
 }
 
 IDXGI_OUTPUT_COM_PTR D3DClass::GetMonitorForAdapter(UINT monitorNumber, const IDXGI_ADAPTER_COM_PTR& adapter)
 {
-    IDXGIOutput* adapterOutput_unsafe;
-    HRESULT result = adapter->EnumOutputs(monitorNumber, &adapterOutput_unsafe);
+    IDXGI_OUTPUT_COM_PTR adapterOutput;
+    HRESULT result = adapter->EnumOutputs(monitorNumber, &adapterOutput);
     if (FAILED(result))
     {
         throw engine_exception("Getting monitor ") << monitorNumber << " for adapter failed with result code = " << result;
     }
-    IDXGI_OUTPUT_COM_PTR adapterOutput(adapterOutput_unsafe);
 
     return adapterOutput;
 }
@@ -276,8 +270,8 @@ void D3DClass::GetVideoCardInformation(const IDXGI_ADAPTER_COM_PTR& adapter)
 }
 
 void D3DClass::GetRefreshRateForWindowSize(const unsigned int numModes, const unique_ptr<DXGI_MODE_DESC[]>& displayModeList,
-    const unsigned int screenWidth, const unsigned int screenHeight,
-    unsigned int& numerator, unsigned int& denominator)
+                                           const unsigned int screenWidth, const unsigned int screenHeight,
+                                           unsigned int& numerator, unsigned int& denominator)
 {
     for (unsigned int i = 0; i < numModes; i++)
     {
@@ -362,45 +356,34 @@ DXGI_SWAP_CHAIN_DESC D3DClass::SetSwapChainDescription(int unsigned screenWidth,
 void D3DClass::CreateSwapChainDeviceAndContext(const DXGI_SWAP_CHAIN_DESC& swapChainDesc)
 {
     // Set the feature level to DirectX 11.
-
     D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
 
-    IDXGISwapChain* swapChain_unsafe;
-    ID3D11Device* device_unsafe;
-    ID3D11DeviceContext* deviceContext_unsafe;
     // Create the swap chain, Direct3D device, and Direct3D device context.
     HRESULT result = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, &featureLevel, 1,
-        D3D11_SDK_VERSION, &swapChainDesc, &swapChain_unsafe, &device_unsafe, NULL, &deviceContext_unsafe);
+        D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain, &m_device, NULL, &m_deviceContext);
 
     if (FAILED(result))
     {
         throw engine_exception("Could not create swap chain, device and device context, result code = ") << result;
     }
-
-    m_swapChain = IDXGI_SWAP_CHAIN_COM_PTR(swapChain_unsafe);
-    m_device = ID3D11_DEVICE_COM_PTR(device_unsafe);
-    m_deviceContext = ID3D11_DEVICE_CONTEXT_COM_PTR(deviceContext_unsafe);
 }
 
 void D3DClass::CreateRenderTargetView()
 {
     // Get the pointer to the back buffer.
     ComPtr<ID3D11Texture2D> backBufferPtr;
-    HRESULT result = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferPtr);
+    HRESULT result = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backBufferPtr);
     if (FAILED(result))
     {
         throw engine_exception("Could not obtain back buffer pointer, result code = ") << result;
     }
 
     // Create the render target view with the back buffer pointer.
-    ID3D11RenderTargetView* renderTargetView_unsafe;
-    result = m_device->CreateRenderTargetView(backBufferPtr.Get(), NULL, &renderTargetView_unsafe);
+    result = m_device->CreateRenderTargetView(backBufferPtr.Get(), NULL, &m_renderTargetView);
     if (FAILED(result))
     {
         throw engine_exception("Could not create render target view, result code = ") << result;
     }
-
-    m_renderTargetView = ID3D11_RENDER_TARGET_VIEW_COM_PTR(renderTargetView_unsafe);
 }
 
 void D3DClass::CreateDepthBuffer(const unsigned int screenWidth, const unsigned int screenHeight)
@@ -423,13 +406,11 @@ void D3DClass::CreateDepthBuffer(const unsigned int screenWidth, const unsigned 
     depthBufferDesc.MiscFlags = 0;
 
     // Create the texture for the depth buffer using the filled out description.
-    ID3D11Texture2D* depthStencilBuffer_unsafe;
-    HRESULT result = m_device->CreateTexture2D(&depthBufferDesc, NULL, &depthStencilBuffer_unsafe);
+    HRESULT result = m_device->CreateTexture2D(&depthBufferDesc, NULL, &m_depthStencilBuffer);
     if (FAILED(result))
     {
         throw engine_exception("Could not create depth buffer, result code = ") << result;
     }
-    m_depthStencilBuffer = ID3D11_TEXTURE_2D_COM_PTR(depthStencilBuffer_unsafe);
 }
 
 D3D11_DEPTH_STENCIL_DESC D3DClass::SetDepthStencilDescription()
@@ -463,13 +444,11 @@ D3D11_DEPTH_STENCIL_DESC D3DClass::SetDepthStencilDescription()
 
 void D3DClass::CreateDepthStencilState(D3D11_DEPTH_STENCIL_DESC& depthStencilDesc)
 {
-    ID3D11DepthStencilState* depthStencilState_unsafe;
-    HRESULT result = m_device->CreateDepthStencilState(&depthStencilDesc, &depthStencilState_unsafe);
+    HRESULT result = m_device->CreateDepthStencilState(&depthStencilDesc, &m_depthStencilState);
     if (FAILED(result))
     {
         throw engine_exception("Could not create depth stencil state, result code = ") << result;
     }
-    m_depthStencilState = ID3D11_DEPTH_STENCIL_STATE_COM_PTR(depthStencilState_unsafe);
 
     // Set the depth stencil state.
     m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
@@ -490,13 +469,11 @@ D3D11_DEPTH_STENCIL_VIEW_DESC D3DClass::CreateDepthStencilViewDescription()
 
 void D3DClass::CreateDepthStencilView(D3D11_DEPTH_STENCIL_VIEW_DESC& depthStencilViewDesc)
 {
-    ID3D11DepthStencilView* depthStencilView_unsafe;
-    HRESULT result = m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), &depthStencilViewDesc, &depthStencilView_unsafe);
+    HRESULT result = m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), &depthStencilViewDesc, &m_depthStencilView);
     if (FAILED(result))
     {
         throw engine_exception("Couldn't create depth stencil view, result code = ") << result;
     }
-    m_depthStencilView = ID3D11_DEPTH_STENCIL_VIEW_COM_PTR(depthStencilView_unsafe);
 }
 
 D3D11_RASTERIZER_DESC D3DClass::SetRasterizerDescription()
@@ -518,13 +495,11 @@ D3D11_RASTERIZER_DESC D3DClass::SetRasterizerDescription()
 
 void D3DClass::SetRasterizerState(D3D11_RASTERIZER_DESC& rasterDesc)
 {
-    ID3D11RasterizerState* rasterState_unsafe;
-    HRESULT result = m_device->CreateRasterizerState(&rasterDesc, &rasterState_unsafe);
+    HRESULT result = m_device->CreateRasterizerState(&rasterDesc, &m_rasterState);
     if (FAILED(result))
     {
         throw engine_exception("Could not set rasterizer state, result code = ") << result;
     }
-    m_rasterState = ID3D11_RASTERIZER_STATE_COM_PTR(rasterState_unsafe);
 
     // Now set the rasterizer state.
     m_deviceContext->RSSetState(m_rasterState.Get());

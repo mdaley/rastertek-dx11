@@ -37,27 +37,33 @@ class D3DClass
 {
 public:
     D3DClass();
-    //D3DClass(const D3DClass&);
     ~D3DClass();
 
-    void Initialize(int screenWidth, int screenHeight, bool vsync, HWND hwnd, bool fullscreen, float screenDepth, float screenNear);
+    void Initialize(const int screenWidth, const int screenHeight, const bool vsync, const HWND hwnd,
+                    const bool fullscreen, const float screenDepth, const float screenNear);
+
     void Shutdown();
 
     void BeginScene(float, float, float, float);
+
     void EndScene();
 
     // Return raw pointer for use outsie the object (but don't try to manage these pointers).
     ID3D11Device* GetDevice();
+
     ID3D11DeviceContext* GetDeviceContext();
 
     void GetProjectionMatrix(XMMATRIX& projection);
+
     void GetWorldMatrix(XMMATRIX& world);
+
     void GetOrthoMatrix(XMMATRIX& ortho);
 
     void GetVideoCardInfo(char* name, int& mbMemory);
 
     // Operators for new and delete needed to set 16-byte alignment.
     static void* operator new (size_t size);
+
     static void operator delete (void* p);
 
 private:
@@ -77,22 +83,37 @@ private:
     XMMATRIX m_orthoMatrix;
 
     IDXGI_FACTORY_COM_PTR GetIDXGIFactory();
+
     IDXGI_ADAPTER_COM_PTR GetPrimaryDisplayAdapter(const IDXGI_FACTORY_COM_PTR& factory);
+
     IDXGI_OUTPUT_COM_PTR GetMonitorForAdapter(const unsigned int monitorNumber, const IDXGI_ADAPTER_COM_PTR& adapter);
+
     unique_ptr<DXGI_MODE_DESC[]> GetDisplayModesForMonitor(const IDXGI_OUTPUT_COM_PTR& monitor, unsigned int& numModes);
+
     void D3DClass::GetRefreshRateForWindowSize(const unsigned int numModes, const unique_ptr<DXGI_MODE_DESC[]>& displayModeList,
                                                const unsigned int screenWidth, const unsigned int screenHeight,
                                                unsigned int& numerator, unsigned int& denominator);
+
     void GetVideoCardInformation(const IDXGI_ADAPTER_COM_PTR& adapter);
+
     DXGI_SWAP_CHAIN_DESC SetSwapChainDescription(const unsigned int screenWidth, const unsigned int screenHeight, const unsigned int numerator,
                                                  const unsigned int denominator, const HWND hwnd, const bool fullscreen);
+
     void CreateSwapChainDeviceAndContext(const DXGI_SWAP_CHAIN_DESC& swapChainDesc);
+
     void CreateRenderTargetView();
+
     void CreateDepthBuffer(const unsigned int screenWidth, const unsigned int screenHeight);
+
     D3D11_DEPTH_STENCIL_DESC D3DClass::SetDepthStencilDescription();
+
     void CreateDepthStencilState(D3D11_DEPTH_STENCIL_DESC& depthStencilDesc);
+
     D3D11_DEPTH_STENCIL_VIEW_DESC CreateDepthStencilViewDescription();
+
     void CreateDepthStencilView(D3D11_DEPTH_STENCIL_VIEW_DESC& depthStencilViewDesc);
+
     D3D11_RASTERIZER_DESC SetRasterizerDescription();
+
     void SetRasterizerState(D3D11_RASTERIZER_DESC& rasterDesc);
 };

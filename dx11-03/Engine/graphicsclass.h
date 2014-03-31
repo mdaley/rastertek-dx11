@@ -14,11 +14,13 @@ class GraphicsClass
 {
 public:
     GraphicsClass();
-    //GraphicsClass(const GraphicsClass&);
+
     ~GraphicsClass();
 
     void Initialize(int, int, HWND);
+
     void Shutdown();
+
     bool Frame();
 
 private:

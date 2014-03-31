@@ -13,23 +13,26 @@ class SystemClass
 {
 public:
     SystemClass();
+
     ~SystemClass();
 
     void Initialize();
+
     void Run();
 
     LRESULT CALLBACK MessageHandler(HWND, UINT, WPARAM, LPARAM);
 
 private:
     bool Frame();
+
     void InitializeWindows(int&, int&);
+
     void ShutdownWindows();
 
 private:
     LPCWSTR m_applicationName;
     HINSTANCE m_hinstance;
     HWND m_hwnd;
-
     unique_ptr<InputClass> m_Input;
     unique_ptr<GraphicsClass> m_Graphics;
 };

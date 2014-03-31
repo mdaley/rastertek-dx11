@@ -4,10 +4,6 @@ GraphicsClass::GraphicsClass()
 {
 }
 
-/*GraphicsClass::GraphicsClass(const GraphicsClass& other)
-{
-}*/
-
 GraphicsClass::~GraphicsClass()
 {
 }
