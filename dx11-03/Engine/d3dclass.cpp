@@ -82,8 +82,8 @@ void D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
     CreateDepthStencilView(depthStencilViewDesc);
 
     // Bind the render target view and depth stencil buffer to the output render pipeline.
-    ID3D11RenderTargetView* renderTargetView_unsafe = m_renderTargetView.get();
-    m_deviceContext->OMSetRenderTargets(1, &renderTargetView_unsafe, m_depthStencilView.get());
+    //ID3D11RenderTargetView* renderTargetView_unsafe = m_renderTargetView.get();
+    m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
     // Setup the raster description which will determine how and what polygons will be drawn.
     D3D11_RASTERIZER_DESC rasterDesc = SetRasterizerDescription();
@@ -139,12 +139,11 @@ void D3DClass::BeginScene(float red, float green, float blue, float alpha)
     color[3] = alpha;
 
     // Clear the back buffer.
-    m_deviceContext->ClearRenderTargetView(m_renderTargetView.get(), color);
+    m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), color);
 
     // Clear the depth buffer.
-    m_deviceContext->ClearDepthStencilView(m_depthStencilView.get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+    m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
-
 
 void D3DClass::EndScene()
 {
@@ -161,15 +160,14 @@ void D3DClass::EndScene()
     }
 }
 
-
 ID3D11Device* D3DClass::GetDevice()
 {
-    return m_device.get();
+    return m_device.Get();
 }
 
 ID3D11DeviceContext* D3DClass::GetDeviceContext()
 {
-    return m_deviceContext.get();
+    return m_deviceContext.Get();
 }
 
 void D3DClass::GetProjectionMatrix(XMMATRIX& projectionMatrix)
@@ -193,20 +191,20 @@ void D3DClass::GetVideoCardInfo(char* cardName, int& memory)
     memory = m_videoCardMemory;
 }
 
-IDXGI_FACTORY_UNIQUE_PTR D3DClass::GetIDXGIFactory()
+IDXGI_FACTORY_COM_PTR D3DClass::GetIDXGIFactory()
 {
     IDXGIFactory* factory_unsafe;
     HRESULT result = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory_unsafe);
     if (FAILED(result))
     {
-        throw engine_exception("Creation of DSXI Factory failed with result code = ") << result;
+        throw engine_exception("Creation of DXGI Factory failed with result code = ") << result;
     }
-    IDXGI_FACTORY_UNIQUE_PTR factory(factory_unsafe);
+    IDXGI_FACTORY_COM_PTR factory(factory_unsafe);
 
     return factory;
 }
 
-IDXGI_ADAPTER_UNIQUE_PTR D3DClass::GetPrimaryDisplayAdapter(const IDXGI_FACTORY_UNIQUE_PTR& factory)
+IDXGI_ADAPTER_COM_PTR D3DClass::GetPrimaryDisplayAdapter(const IDXGI_FACTORY_COM_PTR& factory)
 {
     IDXGIAdapter* adapter_unsafe;
     HRESULT result = factory->EnumAdapters(0, &adapter_unsafe);
@@ -214,12 +212,12 @@ IDXGI_ADAPTER_UNIQUE_PTR D3DClass::GetPrimaryDisplayAdapter(const IDXGI_FACTORY_
     {
         throw engine_exception("Creation of DXGI adapter failed with result code = ") << result;
     }
-    IDXGI_ADAPTER_UNIQUE_PTR adapter(adapter_unsafe);
+    IDXGI_ADAPTER_COM_PTR adapter(adapter_unsafe);
 
     return adapter;
 }
 
-IDXGI_OUTPUT_UNIQUE_PTR D3DClass::GetMonitorForAdapter(UINT monitorNumber, const IDXGI_ADAPTER_UNIQUE_PTR& adapter)
+IDXGI_OUTPUT_COM_PTR D3DClass::GetMonitorForAdapter(UINT monitorNumber, const IDXGI_ADAPTER_COM_PTR& adapter)
 {
     IDXGIOutput* adapterOutput_unsafe;
     HRESULT result = adapter->EnumOutputs(monitorNumber, &adapterOutput_unsafe);
@@ -227,12 +225,12 @@ IDXGI_OUTPUT_UNIQUE_PTR D3DClass::GetMonitorForAdapter(UINT monitorNumber, const
     {
         throw engine_exception("Getting monitor ") << monitorNumber << " for adapter failed with result code = " << result;
     }
-    IDXGI_OUTPUT_UNIQUE_PTR adapterOutput(adapterOutput_unsafe);
+    IDXGI_OUTPUT_COM_PTR adapterOutput(adapterOutput_unsafe);
 
     return adapterOutput;
 }
 
-unique_ptr<DXGI_MODE_DESC[]> D3DClass::GetDisplayModesForMonitor(const IDXGI_OUTPUT_UNIQUE_PTR& monitor, unsigned int& numModes)
+unique_ptr<DXGI_MODE_DESC[]> D3DClass::GetDisplayModesForMonitor(const IDXGI_OUTPUT_COM_PTR& monitor, unsigned int& numModes)
 {
     // Get the number of modes that fit the DXGI_FORMAT_R8G8B8A8_UNORM display format for the adapter output (monitor).
     //unsigned int numModes;
@@ -255,7 +253,7 @@ unique_ptr<DXGI_MODE_DESC[]> D3DClass::GetDisplayModesForMonitor(const IDXGI_OUT
     return displayModeList;
 }
 
-void D3DClass::GetVideoCardInformation(const IDXGI_ADAPTER_UNIQUE_PTR& adapter)
+void D3DClass::GetVideoCardInformation(const IDXGI_ADAPTER_COM_PTR& adapter)
 {
     // Get the adapter (video card) description.
     DXGI_ADAPTER_DESC adapterDesc;
@@ -379,15 +377,15 @@ void D3DClass::CreateSwapChainDeviceAndContext(const DXGI_SWAP_CHAIN_DESC& swapC
         throw engine_exception("Could not create swap chain, device and device context, result code = ") << result;
     }
 
-    m_swapChain = IDXGI_SWAP_CHAIN_UNIQUE_PTR(swapChain_unsafe);
-    m_device = ID3D11_DEVICE_UNIQUE_PTR(device_unsafe);
-    m_deviceContext = ID3D11_DEVICE_CONTEXT_UNIQUE_PTR(deviceContext_unsafe);
+    m_swapChain = IDXGI_SWAP_CHAIN_COM_PTR(swapChain_unsafe);
+    m_device = ID3D11_DEVICE_COM_PTR(device_unsafe);
+    m_deviceContext = ID3D11_DEVICE_CONTEXT_COM_PTR(deviceContext_unsafe);
 }
 
 void D3DClass::CreateRenderTargetView()
 {
     // Get the pointer to the back buffer.
-    unique_ptr<ID3D11Texture2D, ReleaseResource<ID3D11Texture2D>> backBufferPtr;
+    ComPtr<ID3D11Texture2D> backBufferPtr;
     HRESULT result = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferPtr);
     if (FAILED(result))
     {
@@ -396,13 +394,13 @@ void D3DClass::CreateRenderTargetView()
 
     // Create the render target view with the back buffer pointer.
     ID3D11RenderTargetView* renderTargetView_unsafe;
-    result = m_device->CreateRenderTargetView(backBufferPtr.get(), NULL, &renderTargetView_unsafe);
+    result = m_device->CreateRenderTargetView(backBufferPtr.Get(), NULL, &renderTargetView_unsafe);
     if (FAILED(result))
     {
         throw engine_exception("Could not create render target view, result code = ") << result;
     }
 
-    m_renderTargetView = ID3D11_RENDER_TARGET_VIEW_UNIQUE_PTR(renderTargetView_unsafe);
+    m_renderTargetView = ID3D11_RENDER_TARGET_VIEW_COM_PTR(renderTargetView_unsafe);
 }
 
 void D3DClass::CreateDepthBuffer(const unsigned int screenWidth, const unsigned int screenHeight)
@@ -431,7 +429,7 @@ void D3DClass::CreateDepthBuffer(const unsigned int screenWidth, const unsigned 
     {
         throw engine_exception("Could not create depth buffer, result code = ") << result;
     }
-    m_depthStencilBuffer = ID3D11_TEXTURE_2D_UNIQUE_PTR(depthStencilBuffer_unsafe);
+    m_depthStencilBuffer = ID3D11_TEXTURE_2D_COM_PTR(depthStencilBuffer_unsafe);
 }
 
 D3D11_DEPTH_STENCIL_DESC D3DClass::SetDepthStencilDescription()
@@ -471,10 +469,10 @@ void D3DClass::CreateDepthStencilState(D3D11_DEPTH_STENCIL_DESC& depthStencilDes
     {
         throw engine_exception("Could not create depth stencil state, result code = ") << result;
     }
-    m_depthStencilState = ID3D11_DEPTH_STENCIL_STATE_UNIQUE_PTR(depthStencilState_unsafe);
+    m_depthStencilState = ID3D11_DEPTH_STENCIL_STATE_COM_PTR(depthStencilState_unsafe);
 
     // Set the depth stencil state.
-    m_deviceContext->OMSetDepthStencilState(m_depthStencilState.get(), 1);
+    m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
 }
 
 D3D11_DEPTH_STENCIL_VIEW_DESC D3DClass::CreateDepthStencilViewDescription()
@@ -493,12 +491,12 @@ D3D11_DEPTH_STENCIL_VIEW_DESC D3DClass::CreateDepthStencilViewDescription()
 void D3DClass::CreateDepthStencilView(D3D11_DEPTH_STENCIL_VIEW_DESC& depthStencilViewDesc)
 {
     ID3D11DepthStencilView* depthStencilView_unsafe;
-    HRESULT result = m_device->CreateDepthStencilView(m_depthStencilBuffer.get(), &depthStencilViewDesc, &depthStencilView_unsafe);
+    HRESULT result = m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), &depthStencilViewDesc, &depthStencilView_unsafe);
     if (FAILED(result))
     {
         throw engine_exception("Couldn't create depth stencil view, result code = ") << result;
     }
-    m_depthStencilView = ID3D11_DEPTH_STENCIL_VIEW_UNIQUE_PTR(depthStencilView_unsafe);
+    m_depthStencilView = ID3D11_DEPTH_STENCIL_VIEW_COM_PTR(depthStencilView_unsafe);
 }
 
 D3D11_RASTERIZER_DESC D3DClass::SetRasterizerDescription()
@@ -526,8 +524,8 @@ void D3DClass::SetRasterizerState(D3D11_RASTERIZER_DESC& rasterDesc)
     {
         throw engine_exception("Could not set rasterizer state, result code = ") << result;
     }
-    m_rasterState = ID3D11_RASTERIZER_STATE_UNIQUE_PTR(rasterState_unsafe);
+    m_rasterState = ID3D11_RASTERIZER_STATE_COM_PTR(rasterState_unsafe);
 
     // Now set the rasterizer state.
-    m_deviceContext->RSSetState(m_rasterState.get());
+    m_deviceContext->RSSetState(m_rasterState.Get());
 }

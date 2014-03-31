@@ -11,7 +11,7 @@ SystemClass::SystemClass()
     // Get the instance of this application.
     m_hinstance = GetModuleHandle(NULL);
 
-    // Get an external pointer to this object.	
+    // Set an external pointer to this object.	
     ApplicationHandle = this;
 }
 
@@ -60,21 +60,16 @@ void SystemClass::Run()
             DispatchMessage(&msg);
         }
 
-        // If windows signals to end the application then exit out.
+        // If windows signals to end the application then exit.
         if (msg.message == WM_QUIT)
         {
             done = true;
         }
         else
         {
-            // Otherwise do the frame processing.
-            bool result = Frame();
-            if (!result)
-            {
-                done = true;
-            }
+            // Otherwise do the frame processing; we're done if this returns false.
+            done = !Frame();
         }
-
     }
 
     return;
@@ -82,8 +77,6 @@ void SystemClass::Run()
 
 bool SystemClass::Frame()
 {
-    bool result;
-
     // Check if the user pressed escape and wants to exit the application.
     if (m_Input->IsKeyDown(VK_ESCAPE))
     {
@@ -91,13 +84,7 @@ bool SystemClass::Frame()
     }
 
     // Do the frame processing for the graphics object.
-    result = m_Graphics->Frame();
-    if (!result)
-    {
-        return false;
-    }
-
-    return true;
+    return m_Graphics->Frame();
 }
 
 LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
@@ -105,26 +92,26 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
     switch (umsg)
     {
         // Check if a key has been pressed on the keyboard.
-    case WM_KEYDOWN:
-    {
-        // If a key is pressed send it to the input object so it can record that state.
-        m_Input->KeyDown((unsigned int)wparam);
-        return 0;
-    }
+        case WM_KEYDOWN:
+        {
+            // If a key is pressed send it to the input object so it can record that state.
+            m_Input->KeyDown((unsigned int)wparam);
+            return 0;
+        }
 
-        // Check if a key has been released on the keyboard.
-    case WM_KEYUP:
-    {
-        // If a key is released then send it to the input object so it can unset the state for that key.
-        m_Input->KeyUp((unsigned int)wparam);
-        return 0;
-    }
+            // Check if a key has been released on the keyboard.
+        case WM_KEYUP:
+        {
+            // If a key is released then send it to the input object so it can unset the state for that key.
+            m_Input->KeyUp((unsigned int)wparam);
+            return 0;
+        }
 
-        // Any other messages send to the default message handler as our application won't make use of them.
-    default:
-    {
-        return DefWindowProc(hwnd, umsg, wparam, lparam);
-    }
+            // Any other messages send to the default message handler as our application won't make use of them.
+        default:
+        {
+            return DefWindowProc(hwnd, umsg, wparam, lparam);
+        }
     }
 }
 

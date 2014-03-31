@@ -7,9 +7,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline,
 
     try
     {
-
         System->Initialize();
-        
         System->Run();
     }
     catch (engine_exception e)
